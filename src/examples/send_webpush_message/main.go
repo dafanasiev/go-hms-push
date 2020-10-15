@@ -58,8 +58,6 @@ func sendWebPushMessage() {
 	fmt.Printf("Succeed to send message! Response is %+v\n", resp)
 }
 
-
-
 func getWebPushMsgRequest() (*model.MessageRequest, error) {
 	msgRequest := model.NewNotificationMsgRequest()
 	msgRequest.Message.Token = common.TargetTokenArray

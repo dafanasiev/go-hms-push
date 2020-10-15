@@ -25,8 +25,6 @@ import (
 	"github.com/neoscott/hms-push-serverdemo-go/src/push/model"
 	"github.com/neoscott/hms-push-serverdemo-go/src/push/verify"
 	"net/http"
-
-
 )
 
 // SendMessage sends a message to huawei cloud common

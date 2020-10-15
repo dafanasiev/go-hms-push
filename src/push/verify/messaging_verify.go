@@ -20,8 +20,6 @@ import (
 	"errors"
 	"github.com/neoscott/hms-push-serverdemo-go/src/push/model"
 	"regexp"
-
-
 )
 
 var (

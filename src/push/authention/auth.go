@@ -25,7 +25,6 @@ import (
 	"github.com/neoscott/hms-push-serverdemo-go/src/push/config"
 	"net/http"
 	"net/url"
-
 )
 
 type AuthClient struct {
