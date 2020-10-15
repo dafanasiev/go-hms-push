@@ -27,8 +27,6 @@ import (
 	"github.com/neoscott/hms-push-serverdemo-go/src/push/constant"
 
 	"reflect"
-
-
 )
 
 type HttpPushClient struct {
@@ -101,6 +99,7 @@ func (c *HttpPushClient) executeApiOperation(ctx context.Context, request *httpc
 	}
 
 	if retry {
+		c.refreshAuthHeaderOnRetryRequest(request)
 		err = c.sendHttpRequest(ctx, request, responsePointer)
 		return err
 	}
@@ -135,6 +134,13 @@ func (c *HttpPushClient) isNeedRetry(responsePointer interface{}) (bool, error) 
 		return false, err
 	}
 	return true, nil
+}
+
+func (c *HttpPushClient) refreshAuthHeaderOnRetryRequest(request *httpclient.PushRequest) {
+	request.Header = []httpclient.HTTPOption{
+		httpclient.SetHeader("Content-Type", "application/json;charset=utf-8"),
+		httpclient.SetHeader("Authorization", "Bearer "+c.token),
+	}
 }
 
 // if token is timeout or error, refresh token and send again
