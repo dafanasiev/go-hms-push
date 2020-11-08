@@ -16,9 +16,40 @@ Copyright 2020. Huawei Technologies Co., Ltd. All rights reserved.
 
 package config
 
+import (
+	"errors"
+	"fmt"
+	"net/url"
+	"time"
+
+	"github.com/msalihkarakasli/go-hms-push/httpclient"
+)
+
 type Config struct {
-	AppId     string
-	AppSecret string
-	AuthUrl   string
-	PushUrl   string
+	AppId         string
+	AppSecret     string
+	AuthUrl       string
+	PushUrl       string
+	HttpProxyUrl  string
+	MaxRetryTimes int
+	RetryInterval time.Duration
+}
+
+func (c *Config) ToHTTPClientConfig() (*httpclient.HTTPClientConfig, error) {
+	httpClientConfig := httpclient.HTTPClientConfig{
+		RetryConfig: &httpclient.HTTPRetryConfig{
+			MaxRetryTimes: c.MaxRetryTimes,
+			RetryInterval: c.RetryInterval,
+		},
+	}
+
+	if len(c.HttpProxyUrl) > 0 {
+		proxyUrl, err := url.ParseRequestURI(c.HttpProxyUrl)
+		if err != nil {
+			return nil, errors.New(fmt.Sprint("HttpProxyUrl value is invalid: %w", err))
+		}
+		httpClientConfig.ProxyUrl = proxyUrl
+	}
+
+	return &httpClientConfig, nil
 }

@@ -23,6 +23,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"time"
 )
 
@@ -44,6 +45,11 @@ type HTTPRetryConfig struct {
 	RetryInterval time.Duration
 }
 
+type HTTPClientConfig struct {
+	ProxyUrl    *url.URL
+	RetryConfig *HTTPRetryConfig
+}
+
 type HTTPClient struct {
 	Client      *http.Client
 	RetryConfig *HTTPRetryConfig
@@ -57,22 +63,29 @@ func SetHeader(key string, value string) HTTPOption {
 	}
 }
 
-func NewHTTPClient() (*HTTPClient, error) {
-	tr := &http.Transport{
+func NewHTTPClient(config *HTTPClientConfig) (*HTTPClient, error) {
+	tr := http.Transport{
 		MaxIdleConns:       10,
 		IdleConnTimeout:    30 * time.Second,
 		DisableCompression: true,
 		TLSClientConfig:    &tls.Config{InsecureSkipVerify: true},
 	}
 
-	client := &http.Client{Transport: tr}
+	if config != nil && config.ProxyUrl != nil {
+		tr.Proxy = http.ProxyURL(config.ProxyUrl)
+	}
 
-	return &HTTPClient{
-		Client: client,
-		RetryConfig: &HTTPRetryConfig{
+	httpClient := HTTPClient{Client: &http.Client{Transport: &tr}}
+	if config != nil && config.RetryConfig != nil {
+		httpClient.RetryConfig = config.RetryConfig
+	} else {
+		httpClient.RetryConfig = &HTTPRetryConfig{
 			MaxRetryTimes: 4,
-			RetryInterval: 0},
-	}, nil
+			RetryInterval: 0,
+		}
+	}
+
+	return &httpClient, nil
 }
 
 func (r *PushRequest) buildHTTPRequest() (*http.Request, error) {
