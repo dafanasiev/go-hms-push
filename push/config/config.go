@@ -36,6 +36,10 @@ type Config struct {
 }
 
 func (c *Config) ToHTTPClientConfig() (*httpclient.HTTPClientConfig, error) {
+	if c.MaxRetryTimes < 1 {
+		return nil, errors.New(fmt.Sprintf("MaxRetryTimes value is invalid: %d", c.MaxRetryTimes))
+	}
+
 	httpClientConfig := httpclient.HTTPClientConfig{
 		RetryConfig: &httpclient.HTTPRetryConfig{
 			MaxRetryTimes: c.MaxRetryTimes,
@@ -46,7 +50,7 @@ func (c *Config) ToHTTPClientConfig() (*httpclient.HTTPClientConfig, error) {
 	if len(c.HttpProxyUrl) > 0 {
 		proxyUrl, err := url.ParseRequestURI(c.HttpProxyUrl)
 		if err != nil {
-			return nil, errors.New(fmt.Sprint("HttpProxyUrl value is invalid: %w", err))
+			return nil, errors.New(fmt.Sprintf("HttpProxyUrl value is invalid: %w", err))
 		}
 		httpClientConfig.ProxyUrl = proxyUrl
 	}
