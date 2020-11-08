@@ -22,7 +22,7 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/msalihkarakasli/go-hms-push/httpclient"
+	"github.com/almunt/go-hms-push/httpclient"
 )
 
 type Config struct {
