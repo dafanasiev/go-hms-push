@@ -17,7 +17,7 @@ Copyright 2020. Huawei Technologies Co., Ltd. All rights reserved.
 package config
 
 import (
-	"errors"
+	"crypto/tls"
 	"fmt"
 	"net/url"
 	"time"
@@ -31,13 +31,14 @@ type Config struct {
 	AuthUrl       string
 	PushUrl       string
 	HttpProxyUrl  string
+	HttpProxyCert *tls.Certificate
 	MaxRetryTimes int
 	RetryInterval time.Duration
 }
 
 func (c *Config) ToHTTPClientConfig() (*httpclient.HTTPClientConfig, error) {
 	if c.MaxRetryTimes < 1 {
-		return nil, errors.New(fmt.Sprintf("MaxRetryTimes value is invalid: %d", c.MaxRetryTimes))
+		return nil, fmt.Errorf("MaxRetryTimes value is invalid: %d", c.MaxRetryTimes)
 	}
 
 	httpClientConfig := httpclient.HTTPClientConfig{
@@ -48,11 +49,12 @@ func (c *Config) ToHTTPClientConfig() (*httpclient.HTTPClientConfig, error) {
 	}
 
 	if len(c.HttpProxyUrl) > 0 {
-		proxyUrl, err := url.ParseRequestURI(c.HttpProxyUrl)
+		proxyURL, err := url.ParseRequestURI(c.HttpProxyUrl)
 		if err != nil {
-			return nil, errors.New(fmt.Sprintf("HttpProxyUrl value is invalid: %w", err))
+			return nil, fmt.Errorf("HttpProxyUrl value is invalid: %w", err)
 		}
-		httpClientConfig.ProxyUrl = proxyUrl
+
+		httpClientConfig.ProxyConfig = &httpclient.HTTPProxyConfig{ProxyUrl: proxyURL, ProxyCert: c.HttpProxyCert}
 	}
 
 	return &httpClientConfig, nil

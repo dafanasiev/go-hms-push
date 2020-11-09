@@ -20,10 +20,12 @@ import (
 	"bytes"
 	"context"
 	"crypto/tls"
+	"errors"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 )
 
@@ -40,13 +42,18 @@ type PushResponse struct {
 	Body   []byte
 }
 
+type HTTPProxyConfig struct {
+	ProxyUrl  *url.URL
+	ProxyCert *tls.Certificate
+}
+
 type HTTPRetryConfig struct {
 	MaxRetryTimes int
 	RetryInterval time.Duration
 }
 
 type HTTPClientConfig struct {
-	ProxyUrl    *url.URL
+	ProxyConfig *HTTPProxyConfig
 	RetryConfig *HTTPRetryConfig
 }
 
@@ -68,12 +75,23 @@ func NewHTTPClient(config *HTTPClientConfig) (*HTTPClient, error) {
 		MaxIdleConns:       10,
 		IdleConnTimeout:    30 * time.Second,
 		DisableCompression: true,
-		TLSClientConfig:    &tls.Config{InsecureSkipVerify: true},
 	}
 
-	if config != nil && config.ProxyUrl != nil {
-		tr.Proxy = http.ProxyURL(config.ProxyUrl)
+	tlsConfig := tls.Config{InsecureSkipVerify: true}
+
+	if config != nil && config.ProxyConfig != nil && config.ProxyConfig.ProxyUrl != nil {
+		proxyURL := config.ProxyConfig.ProxyUrl
+
+		if strings.ToLower(proxyURL.Scheme) == "https" && config.ProxyConfig.ProxyCert == nil {
+			return nil, errors.New("https proxy certificate not set")
+		}
+		tlsConfig.Certificates = []tls.Certificate{*config.ProxyConfig.ProxyCert}
+		tlsConfig.BuildNameToCertificate()
+
+		tr.Proxy = http.ProxyURL(proxyURL)
 	}
+
+	tr.TLSClientConfig = &tlsConfig
 
 	httpClient := HTTPClient{Client: &http.Client{Transport: &tr}}
 	if config != nil && config.RetryConfig != nil {
