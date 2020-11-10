@@ -17,7 +17,6 @@ Copyright 2020. Huawei Technologies Co., Ltd. All rights reserved.
 package config
 
 import (
-	"crypto/tls"
 	"fmt"
 	"net/url"
 	"time"
@@ -26,14 +25,14 @@ import (
 )
 
 type Config struct {
-	AppId         string
-	AppSecret     string
-	AuthUrl       string
-	PushUrl       string
-	HttpProxyUrl  string
-	HttpProxyCert *tls.Certificate
-	MaxRetryTimes int
-	RetryInterval time.Duration
+	AppId           string
+	AppSecret       string
+	AuthUrl         string
+	PushUrl         string
+	HttpProxyUrl    string
+	ProxyCACertPath string
+	MaxRetryTimes   int
+	RetryInterval   time.Duration
 }
 
 func (c *Config) ToHTTPClientConfig() (*httpclient.HTTPClientConfig, error) {
@@ -54,7 +53,7 @@ func (c *Config) ToHTTPClientConfig() (*httpclient.HTTPClientConfig, error) {
 			return nil, fmt.Errorf("HttpProxyUrl value is invalid: %w", err)
 		}
 
-		httpClientConfig.ProxyConfig = &httpclient.HTTPProxyConfig{ProxyUrl: proxyURL, ProxyCert: c.HttpProxyCert}
+		httpClientConfig.ProxyConfig = &httpclient.HTTPProxyConfig{ProxyUrl: proxyURL, ProxyCACertPath: c.ProxyCACertPath}
 	}
 
 	return &httpClientConfig, nil

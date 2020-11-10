@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/tls"
+	"crypto/x509"
 	"errors"
 	"io"
 	"io/ioutil"
@@ -43,8 +44,8 @@ type PushResponse struct {
 }
 
 type HTTPProxyConfig struct {
-	ProxyUrl  *url.URL
-	ProxyCert *tls.Certificate
+	ProxyUrl        *url.URL
+	ProxyCACertPath string
 }
 
 type HTTPRetryConfig struct {
@@ -75,30 +76,36 @@ func NewHTTPClient(config *HTTPClientConfig) (*HTTPClient, error) {
 		MaxIdleConns:       10,
 		IdleConnTimeout:    30 * time.Second,
 		DisableCompression: true,
+		TLSClientConfig:    &tls.Config{},
 	}
-
-	tlsConfig := tls.Config{InsecureSkipVerify: true}
 
 	if config != nil && config.ProxyConfig != nil && config.ProxyConfig.ProxyUrl != nil {
 		proxyURL := config.ProxyConfig.ProxyUrl
+		if strings.ToLower(proxyURL.Scheme) == "https" && len(config.ProxyConfig.ProxyCACertPath) > 0 {
+			bytes, err := ioutil.ReadFile(config.ProxyConfig.ProxyCACertPath)
+			if err != nil {
+				return nil, err
+			}
 
-		if strings.ToLower(proxyURL.Scheme) == "https" && config.ProxyConfig.ProxyCert == nil {
-			return nil, errors.New("https proxy certificate not set")
+			rootCAs, _ := x509.SystemCertPool()
+			if rootCAs == nil {
+				rootCAs = x509.NewCertPool()
+			}
+			if ok := rootCAs.AppendCertsFromPEM(bytes); !ok {
+				return nil, errors.New("failed to parse proxy server CA certificate")
+			}
+			tr.TLSClientConfig.RootCAs = rootCAs
 		}
-		tlsConfig.Certificates = []tls.Certificate{*config.ProxyConfig.ProxyCert}
-		tlsConfig.BuildNameToCertificate()
 
 		tr.Proxy = http.ProxyURL(proxyURL)
 	}
-
-	tr.TLSClientConfig = &tlsConfig
 
 	httpClient := HTTPClient{Client: &http.Client{Transport: &tr}}
 	if config != nil && config.RetryConfig != nil {
 		httpClient.RetryConfig = config.RetryConfig
 	} else {
 		httpClient.RetryConfig = &HTTPRetryConfig{
-			MaxRetryTimes: 4,
+			MaxRetryTimes: 1,
 			RetryInterval: 0,
 		}
 	}
