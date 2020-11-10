@@ -26,7 +26,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
-	"strings"
 	"time"
 )
 
@@ -80,8 +79,7 @@ func NewHTTPClient(config *HTTPClientConfig) (*HTTPClient, error) {
 	}
 
 	if config != nil && config.ProxyConfig != nil && config.ProxyConfig.ProxyUrl != nil {
-		proxyURL := config.ProxyConfig.ProxyUrl
-		if strings.ToLower(proxyURL.Scheme) == "https" && len(config.ProxyConfig.ProxyCACertPath) > 0 {
+		if len(config.ProxyConfig.ProxyCACertPath) > 0 {
 			bytes, err := ioutil.ReadFile(config.ProxyConfig.ProxyCACertPath)
 			if err != nil {
 				return nil, err
@@ -97,7 +95,7 @@ func NewHTTPClient(config *HTTPClientConfig) (*HTTPClient, error) {
 			tr.TLSClientConfig.RootCAs = rootCAs
 		}
 
-		tr.Proxy = http.ProxyURL(proxyURL)
+		tr.Proxy = http.ProxyURL(config.ProxyConfig.ProxyUrl)
 	}
 
 	httpClient := HTTPClient{Client: &http.Client{Transport: &tr}}
