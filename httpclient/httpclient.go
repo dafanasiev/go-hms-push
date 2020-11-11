@@ -22,11 +22,15 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
+
+	"github.com/almunt/go-hms-push/push/config"
 )
 
 type PushRequest struct {
@@ -70,7 +74,47 @@ func SetHeader(key string, value string) HTTPOption {
 	}
 }
 
+func NewHTTPClientConfig(c *config.Config) (*HTTPClientConfig, error) {
+	if c == nil {
+		return nil, errors.New("config is nil")
+	}
+
+	httpClientConfig := HTTPClientConfig{
+		RetryConfig: &HTTPRetryConfig{
+			MaxRetryTimes: c.MaxRetryTimes,
+			RetryInterval: c.RetryInterval,
+		},
+	}
+
+	if len(c.HttpProxyUrl) > 0 {
+		proxyURL, err := url.ParseRequestURI(c.HttpProxyUrl)
+		if err != nil {
+			return nil, fmt.Errorf("parse proxy url error: %w", err)
+		}
+		httpClientConfig.ProxyConfig = &HTTPProxyConfig{ProxyUrl: proxyURL, ProxyCACertPath: c.HttpProxyCACertPath}
+	}
+
+	return &httpClientConfig, nil
+}
+
 func NewHTTPClient(config *HTTPClientConfig) (*HTTPClient, error) {
+	var proxyURL *url.URL = nil
+
+	if config != nil {
+		if config.ProxyConfig != nil && config.ProxyConfig.ProxyUrl != nil {
+			proxyURL = config.ProxyConfig.ProxyUrl
+			urlScheme := strings.ToLower(proxyURL.Scheme)
+			if urlScheme != "http" && urlScheme != "https" {
+				return nil, errors.New("unsupported proxy url scheme")
+			}
+		}
+		if config.RetryConfig != nil {
+			if config.RetryConfig.MaxRetryTimes < 1 || config.RetryConfig.MaxRetryTimes > 5 {
+				return nil, errors.New("maximum retry times value cannot be less than 1 and more than 5")
+			}
+		}
+	}
+
 	tr := http.Transport{
 		MaxIdleConns:       10,
 		IdleConnTimeout:    30 * time.Second,
@@ -78,9 +122,10 @@ func NewHTTPClient(config *HTTPClientConfig) (*HTTPClient, error) {
 		TLSClientConfig:    &tls.Config{},
 	}
 
-	if config != nil && config.ProxyConfig != nil && config.ProxyConfig.ProxyUrl != nil {
-		if len(config.ProxyConfig.ProxyCACertPath) > 0 {
-			bytes, err := ioutil.ReadFile(config.ProxyConfig.ProxyCACertPath)
+	if proxyURL != nil {
+		cacertPath := config.ProxyConfig.ProxyCACertPath
+		if cacertPath != "" {
+			bytes, err := ioutil.ReadFile(cacertPath)
 			if err != nil {
 				return nil, err
 			}
@@ -92,10 +137,11 @@ func NewHTTPClient(config *HTTPClientConfig) (*HTTPClient, error) {
 			if ok := rootCAs.AppendCertsFromPEM(bytes); !ok {
 				return nil, errors.New("failed to parse proxy server CA certificate")
 			}
+
 			tr.TLSClientConfig.RootCAs = rootCAs
 		}
 
-		tr.Proxy = http.ProxyURL(config.ProxyConfig.ProxyUrl)
+		tr.Proxy = http.ProxyURL(proxyURL)
 	}
 
 	httpClient := HTTPClient{Client: &http.Client{Transport: &tr}}

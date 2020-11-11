@@ -49,12 +49,12 @@ func NewHttpClient(c *config.Config) (*HMSClient, error) {
 		return nil, errors.New("pushUrl can't be empty")
 	}
 
-	httpClientConfig, err := c.ToHTTPClientConfig()
+	httpClientCfg, err := httpclient.NewHTTPClientConfig(c)
 	if err != nil {
 		return nil, err
 	}
 
-	client, err := httpclient.NewHTTPClient(httpClientConfig)
+	client, err := httpclient.NewHTTPClient(httpClientCfg)
 	if err != nil {
 		return nil, errors.New("failed to get http client")
 	}
