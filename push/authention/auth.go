@@ -51,12 +51,12 @@ func NewAuthClient(conf *config.Config) (*AuthClient, error) {
 		return nil, errors.New("appId or appSecret is null")
 	}
 
-	httpClientConfig, err := conf.ToHTTPClientConfig()
+	httpClientCfg, err := httpclient.NewHTTPClientConfig(conf)
 	if err != nil {
 		return nil, err
 	}
 
-	c, err := httpclient.NewHTTPClient(httpClientConfig)
+	c, err := httpclient.NewHTTPClient(httpClientCfg)
 	if err != nil {
 		return nil, errors.New("failed to get http client")
 	}
