@@ -19,7 +19,7 @@ package model
 import (
 	"time"
 
-	"github.com/almunt/go-hms-push/push/constant"
+	"github.com/dafanasiev/go-hms-push/push/constant"
 )
 
 type WebPushConfig struct {

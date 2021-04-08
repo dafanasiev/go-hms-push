@@ -21,9 +21,9 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/almunt/go-hms-push/examples/common"
-	"github.com/almunt/go-hms-push/push/constant"
-	"github.com/almunt/go-hms-push/push/model"
+	"github.com/dafanasiev/go-hms-push/examples/common"
+	"github.com/dafanasiev/go-hms-push/push/constant"
+	"github.com/dafanasiev/go-hms-push/push/model"
 )
 
 func main() {

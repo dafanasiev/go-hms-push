@@ -20,7 +20,7 @@ import (
 	"errors"
 	"regexp"
 
-	"github.com/almunt/go-hms-push/push/model"
+	"github.com/dafanasiev/go-hms-push/push/model"
 )
 
 var (

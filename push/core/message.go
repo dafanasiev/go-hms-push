@@ -22,10 +22,10 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/almunt/go-hms-push/httpclient"
-	"github.com/almunt/go-hms-push/push/constant"
-	"github.com/almunt/go-hms-push/push/model"
-	"github.com/almunt/go-hms-push/push/verify"
+	"github.com/dafanasiev/go-hms-push/httpclient"
+	"github.com/dafanasiev/go-hms-push/push/constant"
+	"github.com/dafanasiev/go-hms-push/push/model"
+	"github.com/dafanasiev/go-hms-push/push/verify"
 )
 
 // SendMessage sends a message to huawei cloud common

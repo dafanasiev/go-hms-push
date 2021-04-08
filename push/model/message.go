@@ -17,7 +17,7 @@ Copyright 2020. Huawei Technologies Co., Ltd. All rights reserved.
 package model
 
 import (
-	"github.com/almunt/go-hms-push/push/constant"
+	"github.com/dafanasiev/go-hms-push/push/constant"
 )
 
 type MessageRequest struct {

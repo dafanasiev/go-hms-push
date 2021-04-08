@@ -24,8 +24,8 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/almunt/go-hms-push/httpclient"
-	"github.com/almunt/go-hms-push/push/config"
+	"github.com/dafanasiev/go-hms-push/httpclient"
+	"github.com/dafanasiev/go-hms-push/push/config"
 )
 
 type AuthClient struct {

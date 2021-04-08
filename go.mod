@@ -1,3 +1,3 @@
-module github.com/almunt/go-hms-push
+module github.com/dafanasiev/go-hms-push
 
-go 1.14
+go 1.16
