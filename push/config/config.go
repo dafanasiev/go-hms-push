@@ -19,12 +19,12 @@ package config
 import "time"
 
 type Config struct {
-	AppId               string
-	AppSecret           string
-	AuthUrl             string
-	PushUrl             string
-	HttpProxyUrl        string
-	HttpProxyCACertPath string
-	MaxRetryTimes       int
-	RetryInterval       time.Duration
+	AppId         string
+	AppSecret     string
+	AuthUrl       string
+	PushUrl       string
+	ProxyUrl      string
+	TrustedCA     string
+	MaxRetryTimes int
+	RetryInterval time.Duration
 }

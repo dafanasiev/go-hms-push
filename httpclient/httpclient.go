@@ -27,10 +27,10 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
-	"strings"
 	"time"
 
 	"github.com/dafanasiev/go-hms-push/push/config"
+	"github.com/dafanasiev/go-hms-push/trace"
 )
 
 type PushRequest struct {
@@ -46,9 +46,9 @@ type PushResponse struct {
 	Body   []byte
 }
 
-type HTTPProxyConfig struct {
-	ProxyUrl        *url.URL
-	ProxyCACertPath string
+type HTTPTransportConfig struct {
+	ProxyUrl  *url.URL
+	TrustedCA string
 }
 
 type HTTPRetryConfig struct {
@@ -57,8 +57,8 @@ type HTTPRetryConfig struct {
 }
 
 type HTTPClientConfig struct {
-	ProxyConfig *HTTPProxyConfig
-	RetryConfig *HTTPRetryConfig
+	TransportConfig *HTTPTransportConfig
+	RetryConfig     *HTTPRetryConfig
 }
 
 type HTTPClient struct {
@@ -67,6 +67,12 @@ type HTTPClient struct {
 }
 
 type HTTPOption func(r *http.Request)
+
+func SetHeader(key string, value string) HTTPOption {
+	return func(r *http.Request) {
+		r.Header.Set(key, value)
+	}
+}
 
 func NewHTTPClientConfig(c *config.Config) (*HTTPClientConfig, error) {
 	if c == nil {
@@ -80,40 +86,19 @@ func NewHTTPClientConfig(c *config.Config) (*HTTPClientConfig, error) {
 		},
 	}
 
-	if len(c.HttpProxyUrl) > 0 {
-		proxyURL, err := url.ParseRequestURI(c.HttpProxyUrl)
+	if len(c.ProxyUrl) > 0 {
+		proxyURL, err := url.ParseRequestURI(c.ProxyUrl)
 		if err != nil {
 			return nil, fmt.Errorf("parse proxy url error: %w", err)
 		}
-		httpClientConfig.ProxyConfig = &HTTPProxyConfig{ProxyUrl: proxyURL, ProxyCACertPath: c.HttpProxyCACertPath}
+		httpClientConfig.TransportConfig = &HTTPTransportConfig{ProxyUrl: proxyURL, TrustedCA: c.TrustedCA}
 	}
 
 	return &httpClientConfig, nil
 }
 
-func SetHeader(key string, value string) HTTPOption {
-	return func(r *http.Request) {
-		r.Header.Set(key, value)
-	}
-}
-
 func NewHTTPClient(config *HTTPClientConfig) (*HTTPClient, error) {
-	var proxyURL *url.URL = nil
-
-	if config != nil {
-		if config.ProxyConfig != nil && config.ProxyConfig.ProxyUrl != nil {
-			proxyURL = config.ProxyConfig.ProxyUrl
-			urlScheme := strings.ToLower(proxyURL.Scheme)
-			if urlScheme != "http" && urlScheme != "https" {
-				return nil, errors.New("unsupported proxy url scheme")
-			}
-		}
-		if config.RetryConfig != nil {
-			if config.RetryConfig.MaxRetryTimes < 1 || config.RetryConfig.MaxRetryTimes > 5 {
-				return nil, errors.New("maximum retry times value cannot be less than 1 and more than 5")
-			}
-		}
-	}
+	var retryConfig *HTTPRetryConfig = nil
 
 	tr := http.Transport{
 		MaxIdleConns:       10,
@@ -122,38 +107,47 @@ func NewHTTPClient(config *HTTPClientConfig) (*HTTPClient, error) {
 		TLSClientConfig:    &tls.Config{},
 	}
 
-	if proxyURL != nil {
-		cacertPath := config.ProxyConfig.ProxyCACertPath
-		if cacertPath != "" {
-			bytes, err := ioutil.ReadFile(cacertPath)
-			if err != nil {
-				return nil, err
+	if config != nil {
+		if config.RetryConfig != nil {
+			if config.RetryConfig.MaxRetryTimes < 1 || config.RetryConfig.MaxRetryTimes > 5 {
+				return nil, errors.New("maximum retry times value cannot be less than 1 and more than 5")
 			}
-
-			rootCAs, _ := x509.SystemCertPool()
-			if rootCAs == nil {
-				rootCAs = x509.NewCertPool()
-			}
-			if ok := rootCAs.AppendCertsFromPEM(bytes); !ok {
-				return nil, errors.New("failed to parse proxy server CA certificate")
-			}
-
-			tr.TLSClientConfig.RootCAs = rootCAs
+			retryConfig = config.RetryConfig
 		}
 
-		tr.Proxy = http.ProxyURL(proxyURL)
+		if config.TransportConfig != nil {
+			if config.TransportConfig.ProxyUrl != nil {
+				tr.Proxy = http.ProxyURL(config.TransportConfig.ProxyUrl)
+			}
+
+			trustedCaPem := config.TransportConfig.TrustedCA
+			if trustedCaPem != "" {
+				bytes, err := ioutil.ReadFile(trustedCaPem)
+				if err != nil {
+					return nil, err
+				}
+
+				rootCAs, _ := x509.SystemCertPool()
+				if rootCAs == nil {
+					rootCAs = x509.NewCertPool()
+				}
+				if ok := rootCAs.AppendCertsFromPEM(bytes); !ok {
+					return nil, errors.New("failed to parse trusted CA certificate")
+				}
+
+				tr.TLSClientConfig.RootCAs = rootCAs
+			}
+		}
 	}
 
-	httpClient := HTTPClient{Client: &http.Client{Transport: &tr}}
-	if config != nil && config.RetryConfig != nil {
-		httpClient.RetryConfig = config.RetryConfig
-	} else {
-		httpClient.RetryConfig = &HTTPRetryConfig{
+	if retryConfig == nil {
+		retryConfig = &HTTPRetryConfig{
 			MaxRetryTimes: 1,
 			RetryInterval: 0,
 		}
 	}
 
+	httpClient := HTTPClient{Client: &http.Client{Transport: &tr}, RetryConfig: retryConfig}
 	return &httpClient, nil
 }
 
@@ -176,22 +170,39 @@ func (r *PushRequest) buildHTTPRequest() (*http.Request, error) {
 	return req, nil
 }
 
-func (c *HTTPClient) doHttpRequest(req *PushRequest) (*PushResponse, error) {
+func (c *HTTPClient) doHttpRequest(ctx context.Context, req *PushRequest) (*PushResponse, error) {
 	request, err := req.buildHTTPRequest()
 	if err != nil {
 		return nil, err
 	}
 
-	resp, err := c.Client.Do(request)
+	var tr trace.HmsTrace
+	if t := ctx.Value(trace.HmsTraceKey); t != nil {
+		tr = t.(trace.HmsTrace)
+	}
+
+	if tr.GotRequestBody != nil {
+		tr.GotRequestBody(req.Body)
+	}
+
+	resp, err := c.Client.Do(request.WithContext(ctx))
 
 	if err != nil {
 		return nil, err
+	}
+
+	if tr.GotResponseStatus != nil {
+		tr.GotResponseStatus(resp.StatusCode)
 	}
 
 	body, err := ioutil.ReadAll(resp.Body)
 	defer resp.Body.Close()
 	if err != nil {
 		return nil, err
+	}
+
+	if tr.GotResponseBody != nil {
+		tr.GotResponseBody(body)
 	}
 
 	return &PushResponse{
@@ -207,7 +218,7 @@ func (c *HTTPClient) DoHttpRequest(ctx context.Context, req *PushRequest) (*Push
 		err    error
 	)
 	for retryTimes := 0; retryTimes < c.RetryConfig.MaxRetryTimes; retryTimes++ {
-		result, err = c.doHttpRequest(req)
+		result, err = c.doHttpRequest(ctx, req)
 
 		if err == nil {
 			break

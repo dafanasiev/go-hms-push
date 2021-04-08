@@ -105,7 +105,6 @@ func (c *HMSClient) executeApiOperation(ctx context.Context, request *httpclient
 	}
 
 	if retry {
-		c.refreshAuthHeaderOnRetryRequest(request)
 		err = c.sendHttpRequest(ctx, request, responsePointer)
 		return err
 	}
@@ -140,13 +139,6 @@ func (c *HMSClient) isNeedRetry(responsePointer interface{}) (bool, error) {
 		return false, err
 	}
 	return true, nil
-}
-
-func (c *HttpPushClient) refreshAuthHeaderOnRetryRequest(request *httpclient.PushRequest) {
-	request.Header = []httpclient.HTTPOption{
-		httpclient.SetHeader("Content-Type", "application/json;charset=utf-8"),
-		httpclient.SetHeader("Authorization", "Bearer "+c.token),
-	}
 }
 
 // if token is timeout or error, refresh token and send again
