@@ -5,6 +5,15 @@ English | [中文](https://github.com/HMS-Core/hms-push-serverdemo-go/blob/maste
 * [Installation](#installation)
 * [Configuration](#configuration)
 * [Sample Code](#sample-code)
+
+This project was forked from [github.com/HMS-Core/hms-push-serverdemo-go](https://github.com/HMS-Core/hms-push-serverdemo-go).
+
+# Table of Contents
+* [Introduction](#introduction)
+* [Installation](#installation)
+* [Configuration](#configuration)
+* [Supported Environments](#supported-enviroment)
+
 * [License](#license)
 
 
@@ -97,4 +106,3 @@ If you run into a bug in our samples, please submit an [issue](https://github.co
 
 ## License
 Pushkit Go sample is licensed under the [Apache License, version 2.0](http://www.apache.org/licenses/LICENSE-2.0).
-
