@@ -19,8 +19,8 @@ package verify
 import (
 	"errors"
 
-	"github.com/msalihkarakasli/go-hms-push/push/constant"
-	"github.com/msalihkarakasli/go-hms-push/push/model"
+	"github.com/almunt/go-hms-push/push/constant"
+	"github.com/almunt/go-hms-push/push/model"
 )
 
 func validateAndroidConfig(androidConfig *model.AndroidConfig) error {
@@ -108,7 +108,7 @@ func validateAndroidNotifyPriority(notification *model.AndroidNotification) erro
 	if notification.Importance != "" &&
 		notification.Importance != constant.NotificationPriorityHigh &&
 		notification.Importance != constant.NotificationPriorityDefault &&
-		notification.Importance != constant.NotificationPriorityLow  {
+		notification.Importance != constant.NotificationPriorityLow {
 		return errors.New("Importance must be 'HIGH', 'NORMAL' or 'LOW'")
 	}
 	return nil

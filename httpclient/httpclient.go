@@ -30,7 +30,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/msalihkarakasli/go-hms-push/push/config"
+	"github.com/almunt/go-hms-push/push/config"
 )
 
 type PushRequest struct {

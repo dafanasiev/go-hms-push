@@ -23,11 +23,11 @@ import (
 	"fmt"
 	"reflect"
 
-	auth "github.com/msalihkarakasli/go-hms-push/push/authention"
-	"github.com/msalihkarakasli/go-hms-push/push/config"
+	auth "github.com/almunt/go-hms-push/push/authention"
+	"github.com/almunt/go-hms-push/push/config"
 
-	"github.com/msalihkarakasli/go-hms-push/httpclient"
-	"github.com/msalihkarakasli/go-hms-push/push/constant"
+	"github.com/almunt/go-hms-push/httpclient"
+	"github.com/almunt/go-hms-push/push/constant"
 )
 
 type HMSClient struct {
