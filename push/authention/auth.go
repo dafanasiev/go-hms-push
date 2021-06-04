@@ -76,8 +76,10 @@ func NewAuthClient(conf *config.Config) (*AuthClient, error) {
 // GetAuthToken gets token from huawei cloud
 // the developer can access the app by using this token
 func (ac *AuthClient) GetAuthToken(ctx context.Context) (string, error) {
-	u, _ := url.Parse(ac.appSecret)
-	body := fmt.Sprintf("grant_type=client_credentials&client_secret=%s&client_id=%s", u.String(), ac.appId)
+	if ac.appId == "" || ac.appSecret == "" {
+		return "", errors.New("appId or appSecret is null")
+	}
+	body := fmt.Sprintf("grant_type=client_credentials&client_secret=%s&client_id=%s", ac.appSecret, ac.appId)
 
 	request := &httpclient.PushRequest{
 		Method: http.MethodPost,
