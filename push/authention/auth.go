@@ -22,7 +22,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"net/url"
 
 	"github.com/dafanasiev/go-hms-push/httpclient"
 	"github.com/dafanasiev/go-hms-push/push/config"
