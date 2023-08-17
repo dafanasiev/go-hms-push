@@ -176,10 +176,11 @@ func validateClickAction(clickAction *model.ClickAction) error {
 			return errors.New("url must not be empty when type is 2")
 		}
 	case constant.TypeApp:
-	case constant.TypeRichResource:
-		if clickAction.RichResource == "" {
-			return errors.New("rich_resource must not be empty when type is 4")
-		}
+		break
+	//case constant.TypeRichResource:
+	//	if clickAction.RichResource == "" {
+	//		return errors.New("rich_resource must not be empty when type is 4")
+	//	}
 	default:
 		return errors.New("type must be in the interval [1 - 4]")
 	}
